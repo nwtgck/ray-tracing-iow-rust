@@ -4,29 +4,24 @@ use std::io::Write;
 mod color3;
 mod vec3;
 mod ray;
+mod hitable;
+mod list_hitable;
+mod sphere_hitable;
 
 use color3::Color3;
 use vec3::Vec3;
 use ray::Ray;
+use crate::hitable::Hitable;
+use crate::list_hitable::ListHitable;
+use crate::sphere_hitable::SphereHitable;
 
-fn hit_sphere(center: &Vec3, radius: f32, r: &Ray) -> f32 {
-    let oc: Vec3 = &r.origin - center;
-    let a : f32  = r.direction.dot(&r.direction);
-    let b : f32  = 2.0 * oc.dot(&r.direction);
-    let c : f32  = oc.dot(&oc) - radius*radius;
-    let discriminant: f32 = b * b - 4.0 * a * c;
-    if discriminant < 0.0 {
-        -1.0
-    } else {
-        (-b - discriminant.sqrt()) / (2.0 * a)
-    }
-}
-
-fn color(r: &Ray) -> Color3 {
-    let t: f32 = hit_sphere(&Vec3{x: 0.0, y: 0.0, z: -1.0}, 0.5, r);
-    if t > 0.0 {
-        let n: Vec3 = (&r.point_at_parameter(t) - &Vec3{x: 0.0, y: 0.0, z: -1.0}).unit_vector();
-        &Color3{r: n.x+1.0, g: n.y+1.0, b: n.z+1.0} * 0.5
+fn color<H: Hitable>(r: &Ray, hitable: &H) -> Color3 {
+    if let Some(hit_record) = hitable.hit(r, 0.0, std::f32::MAX) {
+        &Color3 {
+            r: hit_record.normal.x + 1.0,
+            g: hit_record.normal.y + 1.0,
+            b: hit_record.normal.z + 1.0,
+        } * 0.5
     } else {
         let unit_direction : Vec3 = r.direction.unit_vector();
         let t              : f32  = 0.5 * (unit_direction.y + 1.0);
@@ -45,6 +40,10 @@ fn main() {
     let horizontal        : Vec3 = Vec3{x: 4.0, y: 0.0, z: 0.0};
     let vertical          : Vec3 = Vec3{x: 0.0, y: 2.0, z: 0.0};
     let origin            : Vec3 = Vec3{x: 0.0, y: 0.0, z: 0.0};
+    let hitable           = ListHitable { hitables: vec![
+        SphereHitable {center: Vec3{x: 0.0, y: 0.0, z: -1.0}, radius: 0.5},
+        SphereHitable {center: Vec3{x: 0.0, y: -100.5, z: -1.0}, radius: 100.0},
+    ]};
     let mut j = ny - 1;
     while j >= 0 {
         for i in 0..nx {
@@ -55,7 +54,7 @@ fn main() {
                 direction: &(&lower_left_corner + &(&horizontal * u)) + &(&vertical * v)
             };
 
-            let col: Color3 = color(&r);
+            let col: Color3 = color(&r, &hitable);
             writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
         }
         j -= 1;
