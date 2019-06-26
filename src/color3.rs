@@ -25,7 +25,7 @@ impl Color3 {
     }
 }
 
-impl Add for Color3 {
+impl Add for &Color3 {
     type Output = Color3;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -33,7 +33,7 @@ impl Add for Color3 {
     }
 }
 
-impl Mul<f32> for Color3 {
+impl Mul<f32> for &Color3 {
     type Output = Color3;
 
     fn mul(self, rhs: f32) -> Self::Output {

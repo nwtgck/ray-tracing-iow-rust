@@ -1,4 +1,4 @@
-use std::ops::{Add, Neg, Mul, Div};
+use std::ops::{Add, Neg, Sub, Mul, Div};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vec3 {
@@ -17,7 +17,7 @@ impl Vec3 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
     // Unit vector
-    pub fn unit_vector(self) -> Vec3 {
+    pub fn unit_vector(&self) -> Vec3 {
         self / self.length()
     }
     // Inner product
@@ -34,7 +34,7 @@ impl Vec3 {
     }
 }
 
-impl Add for Vec3 {
+impl Add for &Vec3 {
     type Output = Vec3;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -42,7 +42,7 @@ impl Add for Vec3 {
     }
 }
 
-impl Neg for Vec3 {
+impl Neg for &Vec3 {
     type Output = Vec3;
 
     fn neg(self) -> Self::Output {
@@ -50,7 +50,15 @@ impl Neg for Vec3 {
     }
 }
 
-impl Mul<f32> for Vec3 {
+impl Sub for &Vec3 {
+    type Output = Vec3;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vec3{x: self.x - rhs.x, y: self.y - rhs.y, z: self.z - rhs.z}
+    }
+}
+
+impl Mul<f32> for &Vec3 {
     type Output = Vec3;
 
     fn mul(self, rhs: f32) -> Self::Output {
@@ -58,7 +66,7 @@ impl Mul<f32> for Vec3 {
     }
 }
 
-impl Div<f32> for Vec3 {
+impl Div<f32> for &Vec3 {
     type Output = Vec3;
 
     fn div(self, rhs: f32) -> Self::Output {
