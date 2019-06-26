@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Div};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Color3 {
@@ -38,5 +38,13 @@ impl Mul<f32> for &Color3 {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Color3{r: self.r * rhs, g: self.g * rhs, b: self.b * rhs}
+    }
+}
+
+impl Div<f32> for &Color3 {
+    type Output = Color3;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Color3{r: self.r / rhs, g: self.g / rhs, b: self.b / rhs}
     }
 }
