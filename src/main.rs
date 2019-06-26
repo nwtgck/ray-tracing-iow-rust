@@ -1,7 +1,12 @@
+use std::io;
+use std::io::Write;
+
 fn main() {
+    let mut writer = io::BufWriter::new(io::stdout());
+
     let nx: i32 = 200;
     let ny: i32 = 100;
-    print!("P3\n{} {}\n255\n", nx, ny);
+    writer.write_all(format!("P3\n{} {}\n255\n", nx, ny).as_bytes()).unwrap();
     let mut j = ny - 1;
     while j >= 0 {
         for i in 0..nx {
@@ -12,7 +17,7 @@ fn main() {
             let ir: i32 = color_elem_to_int(r);
             let ig: i32 = color_elem_to_int(g);
             let ib: i32 = color_elem_to_int(b);
-            print!("{} {} {}\n", ir, ig, ib);
+            writer.write_all(format!("{} {} {}\n", ir, ig, ib).as_bytes()).unwrap();
         }
         j -= 1;
     }
