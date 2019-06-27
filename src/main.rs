@@ -89,8 +89,8 @@ fn main() {
     ]};
 
     let camera: Camera = Camera{
-        lookfrom: Vec3 {x: -2.0, y: 2.0, z: 1.0},
-        lookat: Vec3 {x: 0.0, y: 0.0, z: -1.0},
+        lookfrom: Vec3 {x: 0.0, y: 0.0, z: 0.05},
+        lookat: Vec3 {x: 0.0, y: 0.0, z: 0.0},
         vup: Vec3 {x: 0.0, y: 1.0, z: 0.0},
         vfov: 90.0,
         aspect: nx as f32 / ny as f32
