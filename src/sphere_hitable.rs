@@ -3,14 +3,15 @@ use crate::ray::Ray;
 use crate::hitable::Hitable;
 use crate::hitable::HitRecord;
 use crate::material::Material;
+use core::borrow::Borrow;
 
-pub struct SphereHitable<'a> {
+pub struct SphereHitable {
     pub center: Vec3,
     pub radius: f32,
-    pub material: &'a Material
+    pub material: Box<Material>
 }
 
-impl<'a> Hitable for SphereHitable<'a> {
+impl Hitable for SphereHitable {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let oc: Vec3 = &r.origin - &self.center;
         let a : f32  = r.direction.dot(&r.direction);
@@ -26,7 +27,7 @@ impl<'a> Hitable for SphereHitable<'a> {
             let t: f32  = if b1 { temp1 } else {temp2};
             let p: Vec3 = r.point_at_parameter(t);
             let normal: Vec3 = &(&p - &self.center) / self.radius;
-            Some(HitRecord{ t, p, normal, material: self.material})
+            Some(HitRecord{ t, p, normal, material: self.material.borrow()})
         } else {
             None
         }
