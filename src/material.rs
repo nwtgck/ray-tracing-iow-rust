@@ -42,6 +42,19 @@ fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
     v - &(&(n * 2.0) * v.dot(n))
 }
 
+fn refract(v: &Vec3, n: &Vec3, ni_over_nt: f32) -> Option<Vec3> {
+    let uv: Vec3 = v.unit_vector();
+    let dt: f32 = uv.dot(n);
+    let discriminant: f32 = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
+    if discriminant > 0.0 {
+        Some(
+            &(&(&uv - &(n * dt)) * ni_over_nt) - &(n * discriminant.sqrt())
+        )
+    } else {
+        None
+    }
+}
+
 impl Material for MetalMaterial {
     fn scatter(&self, rng: &mut rand::rngs::StdRng, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
         let reflected: Vec3 = reflect(&r_in.direction.unit_vector(), &hit_record.normal);
@@ -57,5 +70,28 @@ impl Material for MetalMaterial {
         } else {
             None
         }
+    }
+}
+
+pub struct DielectricMaterial {
+    pub ref_idx: f32
+}
+
+impl Material for DielectricMaterial {
+    fn scatter(&self, _rng: &mut rand::rngs::StdRng, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
+        let attenuation: Color3 = Color3 {r: 1.0, g: 1.0, b: 1.0};
+        let (outward_normal, ni_over_nt) =
+            if r_in.direction.dot(&hit_record.normal) > 0.0 {
+                (-&hit_record.normal, self.ref_idx)
+            } else {
+                (hit_record.normal, 1.0 / self.ref_idx)
+            };
+
+        refract(&r_in.direction, &outward_normal, ni_over_nt).map(|refracted| {
+           ScatterRecord {
+               attenuation,
+               scattered: Ray{origin: hit_record.p, direction: refracted}
+           }
+        })
     }
 }
