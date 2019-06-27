@@ -73,12 +73,12 @@ fn main() {
         SphereHitable {
             center: Vec3{x: 1.0, y: 0.0, z: -1.0},
             radius: 0.5,
-            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.6, b: 0.2}}
+            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.6, b: 0.2}, f: 1.0}
         },
         SphereHitable {
             center: Vec3{x: -1.0, y: 0.0, z: -1.0},
             radius: 0.5,
-            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.8, b: 0.8}}
+            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.8, b: 0.8}, f: 0.3}
         },
     ]};
     let camera: Camera = Camera{};

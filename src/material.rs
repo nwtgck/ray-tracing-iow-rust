@@ -28,7 +28,14 @@ impl Material for LambertMaterial {
 }
 
 pub struct MetalMaterial {
-    pub albedo: Color3
+    pub albedo: Color3,
+    pub f: f32
+}
+
+impl MetalMaterial {
+    fn fuzz(&self) -> f32 {
+        if self.f < 1.0 {self.f} else {1.0}
+    }
 }
 
 fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
@@ -36,9 +43,12 @@ fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
 }
 
 impl Material for MetalMaterial {
-    fn scatter(&self, _rng: &mut rand::rngs::StdRng, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
+    fn scatter(&self, rng: &mut rand::rngs::StdRng, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
         let reflected: Vec3 = reflect(&r_in.direction.unit_vector(), &hit_record.normal);
-        let scattered: Ray  = Ray {origin: hit_record.p, direction: reflected};
+        let scattered: Ray  = Ray {
+            origin: hit_record.p,
+            direction: &reflected + &(&util::random_in_unit_sphere(rng) * self.fuzz())
+        };
         if scattered.direction.dot(&hit_record.normal) > 0.0 {
             Some(ScatterRecord {
                 attenuation: self.albedo,
