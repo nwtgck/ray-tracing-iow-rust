@@ -74,11 +74,16 @@ fn main() {
         SphereHitable {
             center: Vec3{x: 1.0, y: 0.0, z: -1.0},
             radius: 0.5,
-            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.6, b: 0.2}, f: 0.0}
+            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.6, b: 0.2}, f: 0.2}
         },
         SphereHitable {
             center: Vec3{x: -1.0, y: 0.0, z: -1.0},
             radius: 0.5,
+            material: &DielectricMaterial{ref_idx: 1.5}
+        },
+        SphereHitable {
+            center: Vec3{x: -1.0, y: 0.0, z: -1.0},
+            radius: -0.45,
             material: &DielectricMaterial{ref_idx: 1.5}
         },
     ]};

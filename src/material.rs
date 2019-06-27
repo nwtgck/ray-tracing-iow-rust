@@ -1,3 +1,4 @@
+use rand::prelude::*;
 use crate::color3::Color3;
 use crate::ray::Ray;
 use crate::hitable::HitRecord;
@@ -55,6 +56,12 @@ fn refract(v: &Vec3, n: &Vec3, ni_over_nt: f32) -> Option<Vec3> {
     }
 }
 
+fn schlick(cosine: f32, ref_idx: f32) -> f32 {
+    let mut r0: f32 = (1.0 - ref_idx) / (1.0 + ref_idx);
+    r0 = r0 * r0;
+    r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
+}
+
 impl Material for MetalMaterial {
     fn scatter(&self, rng: &mut rand::rngs::StdRng, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
         let reflected: Vec3 = reflect(&r_in.direction.unit_vector(), &hit_record.normal);
@@ -78,20 +85,34 @@ pub struct DielectricMaterial {
 }
 
 impl Material for DielectricMaterial {
-    fn scatter(&self, _rng: &mut rand::rngs::StdRng, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
+    fn scatter(&self, rng: &mut rand::rngs::StdRng, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
+        let reflected: Vec3 = reflect(&r_in.direction, &hit_record.normal);
         let attenuation: Color3 = Color3 {r: 1.0, g: 1.0, b: 1.0};
-        let (outward_normal, ni_over_nt) =
+        let (outward_normal, ni_over_nt, cosine) =
             if r_in.direction.dot(&hit_record.normal) > 0.0 {
-                (-&hit_record.normal, self.ref_idx)
+                let cosine: f32 = self.ref_idx * r_in.direction.dot(&hit_record.normal) / r_in.direction.length();
+                (-&hit_record.normal, self.ref_idx, cosine)
             } else {
-                (hit_record.normal, 1.0 / self.ref_idx)
+                let cosine: f32 = -r_in.direction.dot(&hit_record.normal) / r_in.direction.length();
+                (hit_record.normal, 1.0 / self.ref_idx, cosine)
             };
 
-        refract(&r_in.direction, &outward_normal, ni_over_nt).map(|refracted| {
-           ScatterRecord {
-               attenuation,
-               scattered: Ray{origin: hit_record.p, direction: refracted}
-           }
-        })
+        let reflect_prob: f32 = schlick(cosine, self.ref_idx);
+
+        let r: f32 = rng.gen();
+        match refract(&r_in.direction, &outward_normal, ni_over_nt) {
+            Some(refracted) if reflect_prob <= r => {
+                Some(ScatterRecord {
+                    attenuation,
+                    scattered: Ray{origin: hit_record.p, direction: refracted}
+                })
+            },
+            _ => {
+               Some(ScatterRecord {
+                    attenuation,
+                    scattered: Ray{origin: hit_record.p, direction: reflected}
+                })
+            }
+        }
     }
 }
