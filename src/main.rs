@@ -10,6 +10,8 @@ mod hitable;
 mod list_hitable;
 mod sphere_hitable;
 mod camera;
+mod material;
+mod util;
 
 use color3::Color3;
 use vec3::Vec3;
@@ -17,25 +19,28 @@ use ray::Ray;
 use hitable::Hitable;
 use list_hitable::ListHitable;
 use sphere_hitable::SphereHitable;
+use material::{LambertMaterial, MetalMaterial};
 
-fn random_in_unit_sphere(rng: &mut rand::rngs::StdRng) -> Vec3 {
-    let mut p: Vec3;
-    while {
-        p = &(&Vec3{x: rng.gen(), y: rng.gen(), z: rng.gen()} * 2.0) - &Vec3{x: 1.0, y: 1.0, z: 1.0};
-        p.squared_length() >= 1.0
-    } {}
-    p
-}
 
 use camera::Camera;
 
-fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H) -> Color3 {
+fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, depth: i32) -> Color3 {
     if let Some(hit_record) = hitable.hit(r, 0.001, std::f32::MAX) {
-        let target: Vec3 = &(&hit_record.p + &hit_record.normal) + &random_in_unit_sphere(rng);
-        &color(rng, &Ray{
-            origin: hit_record.p,
-            direction: &target - &hit_record.p
-        }, hitable) * 0.5
+        if depth < 50 {
+            if let Some(scatter_record) = hit_record.material.scatter(rng, r, &hit_record) {
+                let col = color(rng, &scatter_record.scattered, hitable, depth+1);
+                let attenuation = scatter_record.attenuation;
+                Color3 {
+                    r: col.r * attenuation.r,
+                    g: col.g * attenuation.g,
+                    b: col.b * attenuation.b
+                }
+            } else {
+                Color3 {r: 0.0, g: 0.0, b: 0.0}
+            }
+        } else {
+            Color3 {r: 0.0, g: 0.0, b: 0.0}
+        }
     } else {
         let unit_direction : Vec3 = r.direction.unit_vector();
         let t              : f32  = 0.5 * (unit_direction.y + 1.0);
@@ -55,8 +60,26 @@ fn main() {
     writer.write_all(format!("P3\n{} {}\n255\n", nx, ny).as_bytes()).unwrap();
 
     let hitable           = ListHitable { hitables: vec![
-        SphereHitable {center: Vec3{x: 0.0, y: 0.0, z: -1.0}, radius: 0.5},
-        SphereHitable {center: Vec3{x: 0.0, y: -100.5, z: -1.0}, radius: 100.0},
+        SphereHitable {
+            center: Vec3{x: 0.0, y: 0.0, z: -1.0},
+            radius: 0.5,
+            material: &LambertMaterial{albedo: Color3{r: 0.8, g: 0.3, b: 0.3}}
+        },
+        SphereHitable {
+            center: Vec3{x: 0.0, y: -100.5, z: -1.0},
+            radius: 100.0,
+            material: &LambertMaterial{albedo: Color3{r: 0.8, g: 0.8, b: 0.0}}
+        },
+        SphereHitable {
+            center: Vec3{x: 1.0, y: 0.0, z: -1.0},
+            radius: 0.5,
+            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.6, b: 0.2}}
+        },
+        SphereHitable {
+            center: Vec3{x: -1.0, y: 0.0, z: -1.0},
+            radius: 0.5,
+            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.8, b: 0.8}}
+        },
     ]};
     let camera: Camera = Camera{};
     let mut j = ny - 1;
@@ -67,7 +90,7 @@ fn main() {
                 let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
                 let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
                 let r: Ray = camera.get_ray(u, v);
-                col = &col + &color(&mut rng, &r, &hitable);
+                col = &col + &color(&mut rng, &r, &hitable, 0);
             }
             col = &col / ns as f32;
             col = Color3 {r: col.r.sqrt(), g: col.g.sqrt(), b: col.b.sqrt()};
