@@ -88,12 +88,18 @@ fn main() {
         },
     ]};
 
+    let lookfrom: Vec3 = Vec3 {x: 3.0, y: 3.0, z: 2.0};
+    let lookat  : Vec3 = Vec3 {x: 0.0, y: 0.0, z: -1.0};
+    let focus_dist: f32 = (&lookfrom - &lookat).length();
+    let aperture  : f32  = 2.0;
     let camera: Camera = Camera{
-        lookfrom: Vec3 {x: 0.0, y: 0.0, z: 0.05},
-        lookat: Vec3 {x: 0.0, y: 0.0, z: 0.0},
+        lookfrom,
+        lookat,
         vup: Vec3 {x: 0.0, y: 1.0, z: 0.0},
-        vfov: 90.0,
-        aspect: nx as f32 / ny as f32
+        vfov: 20.0,
+        aspect: nx as f32 / ny as f32,
+        aperture,
+        focus_dist
     };
     let mut j = ny - 1;
     while j >= 0 {
@@ -102,7 +108,7 @@ fn main() {
             for _ in 0..ns {
                 let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
                 let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
-                let r: Ray = camera.get_ray(u, v);
+                let r: Ray = camera.get_ray(&mut rng, u, v);
                 col = &col + &color(&mut rng, &r, &hitable, 0);
             }
             col = &col / ns as f32;
