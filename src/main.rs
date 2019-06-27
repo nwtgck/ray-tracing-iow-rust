@@ -17,15 +17,25 @@ use ray::Ray;
 use hitable::Hitable;
 use list_hitable::ListHitable;
 use sphere_hitable::SphereHitable;
+
+fn random_in_unit_sphere(rng: &mut rand::rngs::StdRng) -> Vec3 {
+    let mut p: Vec3;
+    while {
+        p = &(&Vec3{x: rng.gen(), y: rng.gen(), z: rng.gen()} * 2.0) - &Vec3{x: 1.0, y: 1.0, z: 1.0};
+        p.squared_length() >= 1.0
+    } {}
+    p
+}
+
 use camera::Camera;
 
-fn color<H: Hitable>(r: &Ray, hitable: &H) -> Color3 {
+fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H) -> Color3 {
     if let Some(hit_record) = hitable.hit(r, 0.0, std::f32::MAX) {
-        &Color3 {
-            r: hit_record.normal.x + 1.0,
-            g: hit_record.normal.y + 1.0,
-            b: hit_record.normal.z + 1.0,
-        } * 0.5
+        let target: Vec3 = &(&hit_record.p + &hit_record.normal) + &random_in_unit_sphere(rng);
+        &color(rng, &Ray{
+            origin: hit_record.p,
+            direction: &target - &hit_record.p
+        }, hitable) * 0.5
     } else {
         let unit_direction : Vec3 = r.direction.unit_vector();
         let t              : f32  = 0.5 * (unit_direction.y + 1.0);
@@ -57,7 +67,7 @@ fn main() {
                 let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
                 let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
                 let r: Ray = camera.get_ray(u, v);
-                col = &col + &color(&r, &hitable);
+                col = &col + &color(&mut rng, &r, &hitable);
             }
             col = &col / ns as f32;
             writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
