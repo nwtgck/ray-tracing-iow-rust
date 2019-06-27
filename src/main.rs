@@ -70,6 +70,7 @@ fn main() {
                 col = &col + &color(&mut rng, &r, &hitable);
             }
             col = &col / ns as f32;
+            col = Color3 {r: col.r.sqrt(), g: col.g.sqrt(), b: col.b.sqrt()};
             writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
         }
         j -= 1;
