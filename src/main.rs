@@ -60,20 +60,41 @@ fn main() {
     let ns: i32 = 100;
     writer.write_all(format!("P3\n{} {}\n255\n", nx, ny).as_bytes()).unwrap();
 
-    let radius: f32 = (std::f32::consts::PI / 4.0).cos();
     let hitable           = ListHitable { hitables: vec![
         SphereHitable {
-            center: Vec3{x: -radius, y: 0.0, z: -1.0},
-            radius,
-            material: &LambertMaterial{albedo: Color3{r: 0.0, g: 0.0, b: 1.0}}
+            center: Vec3{x: 0.0, y: 0.0, z: -1.0},
+            radius: 0.5,
+            material: &LambertMaterial{albedo: Color3{r: 0.1, g: 0.2, b: 0.5}}
         },
         SphereHitable {
-            center: Vec3{x: radius, y: 0.0, z: -1.0},
-            radius,
-            material: &LambertMaterial{albedo: Color3{r: 1.0, g: 0.0, b: 0.0}}
+            center: Vec3{x: 0.0, y: -100.5, z: -1.0},
+            radius: 100.0,
+            material: &LambertMaterial{albedo: Color3{r: 0.8, g: 0.8, b: 0.0}}
+        },
+        SphereHitable {
+            center: Vec3{x: 1.0, y: 0.0, z: -1.0},
+            radius: 0.5,
+            material: &MetalMaterial{albedo: Color3{r: 0.8, g: 0.6, b: 0.2}, f: 0.2}
+        },
+        SphereHitable {
+            center: Vec3{x: -1.0, y: 0.0, z: -1.0},
+            radius: 0.5,
+            material: &DielectricMaterial{ref_idx: 1.5}
+        },
+        SphereHitable {
+            center: Vec3{x: -1.0, y: 0.0, z: -1.0},
+            radius: -0.45,
+            material: &DielectricMaterial{ref_idx: 1.5}
         },
     ]};
-    let camera: Camera = Camera{vfov: 90.0, aspect: nx as f32 / ny as f32};
+
+    let camera: Camera = Camera{
+        lookfrom: Vec3 {x: -2.0, y: 2.0, z: 1.0},
+        lookat: Vec3 {x: 0.0, y: 0.0, z: -1.0},
+        vup: Vec3 {x: 0.0, y: 1.0, z: 0.0},
+        vfov: 90.0,
+        aspect: nx as f32 / ny as f32
+    };
     let mut j = ny - 1;
     while j >= 0 {
         for i in 0..nx {
