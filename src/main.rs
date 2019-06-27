@@ -30,7 +30,7 @@ fn random_in_unit_sphere(rng: &mut rand::rngs::StdRng) -> Vec3 {
 use camera::Camera;
 
 fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H) -> Color3 {
-    if let Some(hit_record) = hitable.hit(r, 0.0, std::f32::MAX) {
+    if let Some(hit_record) = hitable.hit(r, 0.001, std::f32::MAX) {
         let target: Vec3 = &(&hit_record.p + &hit_record.normal) + &random_in_unit_sphere(rng);
         &color(rng, &Ray{
             origin: hit_record.p,
