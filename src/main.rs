@@ -1,4 +1,5 @@
 use std::io;
+use std::fs;
 use std::io::Write;
 use rand;
 use rand::prelude::*;
@@ -156,7 +157,16 @@ fn main() {
     // Parse options
     let opt = Opt::from_args();
 
-    let mut writer = io::BufWriter::new(io::stdout());
+
+    // Select output destination whether file or stdout
+    // (from: https://users.rust-lang.org/t/how-to-create-bufreader---from-option-file-with-std-io-stdout-as-fallback-in-a-rust-way/12980/2?u=nwtgck)
+    let write: Box<Write> =
+        if let Some(file_path) = opt.file {
+            Box::new(fs::File::create(file_path).unwrap())
+        } else {
+            Box::new(io::stdout())
+        };
+    let mut writer = io::BufWriter::new(write);
 
     let seed: [u8; 32] = [opt.random_seed; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
@@ -181,7 +191,7 @@ fn main() {
         aperture,
         focus_dist
     };
-    let mut j = ny - 1;
+    let mut j = (ny - 1) as i32;
     while j >= 0 {
         for i in 0..nx {
             let mut col: Color3 = Color3 {r: 0.0, g: 0.0, b: 0.0};
