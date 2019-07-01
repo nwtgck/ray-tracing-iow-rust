@@ -26,11 +26,11 @@ use material::{LambertMaterial, MetalMaterial};
 use camera::Camera;
 use crate::material::DielectricMaterial;
 
-fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, depth: i32) -> Color3 {
-    if let Some(hit_record) = hitable.hit(r, 0.001, std::f32::MAX) {
+fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_float: f32, depth: i32) -> Color3 {
+    if let Some(hit_record) = hitable.hit(r, min_float, std::f32::MAX) {
         if depth < 50 {
             if let Some(scatter_record) = hit_record.material.scatter(rng, r, &hit_record) {
-                let col = color(rng, &scatter_record.scattered, hitable, depth+1);
+                let col = color(rng, &scatter_record.scattered, hitable, min_float, depth+1);
                 let attenuation = scatter_record.attenuation;
                 Color3 {
                     r: col.r * attenuation.r,
@@ -144,6 +144,10 @@ struct Opt {
     #[structopt(long, default_value = "10")]
     n_samples: u32,
 
+    /// Minimum float number
+    #[structopt(long, default_value = "0.001")]
+    min_float: f32,
+
     /// Random seed
     #[structopt(long, default_value = "101")]
     random_seed: u8,
@@ -199,7 +203,7 @@ fn main() {
                 let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
                 let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
                 let r: Ray = camera.get_ray(&mut rng, u, v);
-                col = &col + &color(&mut rng, &r, &hitable, 0);
+                col = &col + &color(&mut rng, &r, &hitable, opt.min_float, 0);
             }
             col = &col / ns as f32;
             col = Color3 {r: col.r.sqrt(), g: col.g.sqrt(), b: col.b.sqrt()};
