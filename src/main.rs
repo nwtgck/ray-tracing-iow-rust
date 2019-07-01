@@ -15,7 +15,8 @@ mod camera;
 mod material;
 mod util;
 mod render;
-mod random_hitables;
+mod random_scenes;
+mod scene;
 
 
 /// Ray Tracing in One Weekend in Rust
@@ -65,14 +66,14 @@ fn main() {
     // Get random generator
     let mut rng: rand::rngs::StdRng = util::rng_by_seed(opt.random_seed);
 
-    // Generate hitable
-    let hitable = random_hitables::iow_book_cover(&mut rng);
+    // Generate scene
+    let scene = random_scenes::iow_book_cover(&mut rng, opt.width, opt.height);
 
     // Render by ray tracing
     render::render(
         writer,
         opt.random_seed,
-        hitable,
+        scene,
         opt.width,
         opt.height,
         opt.n_samples,

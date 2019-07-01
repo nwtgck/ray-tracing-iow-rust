@@ -7,9 +7,9 @@ use crate::color3::Color3;
 use crate::vec3::Vec3;
 use crate::ray::Ray;
 use crate::hitable::Hitable;
-use crate::camera::Camera;
 use crate::util;
 use core::borrow::BorrowMut;
+use crate::scene::Scene;
 
 fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_float: f32, depth: i32) -> Color3 {
     if let Some(hit_record) = hitable.hit(r, min_float, std::f32::MAX) {
@@ -35,7 +35,7 @@ fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_flo
     }
 }
 
-pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWriter<W>, random_seed: u8, hitable: H, width: u32, height: u32, n_samples: u32, min_float: f32) {
+pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWriter<W>, random_seed: u8, scene: Scene<H>, width: u32, height: u32, n_samples: u32, min_float: f32) {
     let mut rng = util::rng_by_seed(random_seed);
 
     let nx: u32 = width;
@@ -43,19 +43,8 @@ pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWrite
     let ns: u32 = n_samples;
     writer.write_all(format!("P3\n{} {}\n255\n", nx, ny).as_bytes()).unwrap();
 
-    let lookfrom: Vec3 = Vec3 {x: 13.0, y: 2.0, z: 3.0};
-    let lookat  : Vec3 = Vec3 {x: 0.0, y: 0.0, z: 0.0};
-    let focus_dist: f32 = 10.0;
-    let aperture  : f32  = 0.1;
-    let camera: Camera = Camera{
-        lookfrom,
-        lookat,
-        vup: Vec3 {x: 0.0, y: 1.0, z: 0.0},
-        vfov: 20.0,
-        aspect: nx as f32 / ny as f32,
-        aperture,
-        focus_dist
-    };
+    let camera = scene.camera;
+    let hitable = scene.hitable;
 
     // Position and seed pairs
     let pos_and_seeds: Vec<((u32, u32), u8)> = {

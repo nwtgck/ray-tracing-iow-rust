@@ -7,11 +7,13 @@ use crate::hitable::Hitable;
 use crate::list_hitable::ListHitable;
 use crate::sphere_hitable::SphereHitable;
 use crate::material::{LambertMaterial, MetalMaterial};
+use crate::camera::Camera;
+use crate::scene::Scene;
 
 use crate::material::DielectricMaterial;
 
 // Book cover on the book of Ray Tracing in One Weekend
-pub fn iow_book_cover(rng: &mut rand::rngs::StdRng) -> impl Hitable {
+pub fn iow_book_cover(rng: &mut rand::rngs::StdRng, width: u32, height: u32) -> Scene<impl Hitable> {
     let mut hitables: Vec<SphereHitable> = Vec::new();
 
     hitables.push(SphereHitable {
@@ -82,5 +84,22 @@ pub fn iow_book_cover(rng: &mut rand::rngs::StdRng) -> impl Hitable {
         material: Box::new(MetalMaterial{albedo: Color3{r: 0.7, g: 0.6, b: 0.5}, f: 0.0})
     });
 
-    ListHitable{hitables}
+    let lookfrom: Vec3 = Vec3 {x: 13.0, y: 2.0, z: 3.0};
+    let lookat  : Vec3 = Vec3 {x: 0.0, y: 0.0, z: 0.0};
+    let focus_dist: f32 = 10.0;
+    let aperture  : f32  = 0.1;
+    let camera: Camera = Camera {
+        lookfrom,
+        lookat,
+        vup: Vec3 {x: 0.0, y: 1.0, z: 0.0},
+        vfov: 20.0,
+        aspect: width as f32 / height as f32,
+        aperture,
+        focus_dist
+    };
+
+    Scene {
+        camera,
+        hitable: ListHitable{hitables}
+    }
 }
