@@ -1,4 +1,5 @@
 use std::io;
+use std::fs;
 use std::io::Write;
 use rand;
 use rand::prelude::*;
@@ -25,11 +26,11 @@ use material::{LambertMaterial, MetalMaterial};
 use camera::Camera;
 use crate::material::DielectricMaterial;
 
-fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, depth: i32) -> Color3 {
-    if let Some(hit_record) = hitable.hit(r, 0.001, std::f32::MAX) {
+fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_float: f32, depth: i32) -> Color3 {
+    if let Some(hit_record) = hitable.hit(r, min_float, std::f32::MAX) {
         if depth < 50 {
             if let Some(scatter_record) = hit_record.material.scatter(rng, r, &hit_record) {
-                let col = color(rng, &scatter_record.scattered, hitable, depth+1);
+                let col = color(rng, &scatter_record.scattered, hitable, min_float, depth+1);
                 let attenuation = scatter_record.attenuation;
                 Color3 {
                     r: col.r * attenuation.r,
@@ -123,15 +124,60 @@ fn random_scene(rng: &mut rand::rngs::StdRng) -> impl Hitable {
     ListHitable{hitables}
 }
 
-fn main() {
-    let mut writer = io::BufWriter::new(io::stdout());
+use std::path::PathBuf;
+use structopt::StructOpt;
 
-    let seed: [u8; 32] = [13; 32];
+/// Ray Tracing in One Weekend in Rust
+#[derive(StructOpt, Debug)]
+#[structopt(name = "ray-tracing-iow")]
+#[structopt(rename_all = "kebab-case")]
+struct Opt {
+    /// Image width
+    #[structopt(long, default_value = "600")]
+    width: u32,
+
+    /// Image height
+    #[structopt(long, default_value = "400")]
+    height: u32,
+
+    /// Number of samples
+    #[structopt(long, default_value = "10")]
+    n_samples: u32,
+
+    /// Minimum float number
+    #[structopt(long, default_value = "0.001")]
+    min_float: f32,
+
+    /// Random seed
+    #[structopt(long, default_value = "101")]
+    random_seed: u8,
+
+    /// Output file path
+    #[structopt(name = "FILE", parse(from_os_str))]
+    file: Option<PathBuf>,
+}
+
+fn main() {
+    // Parse options
+    let opt = Opt::from_args();
+
+
+    // Select output destination whether file or stdout
+    // (from: https://users.rust-lang.org/t/how-to-create-bufreader---from-option-file-with-std-io-stdout-as-fallback-in-a-rust-way/12980/2?u=nwtgck)
+    let write: Box<Write> =
+        if let Some(file_path) = opt.file {
+            Box::new(fs::File::create(file_path).unwrap())
+        } else {
+            Box::new(io::stdout())
+        };
+    let mut writer = io::BufWriter::new(write);
+
+    let seed: [u8; 32] = [opt.random_seed; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
 
-    let nx: i32 = 1200;
-    let ny: i32 = 800;
-    let ns: i32 = 10;
+    let nx: u32 = opt.width;
+    let ny: u32 = opt.height;
+    let ns: u32 = opt.n_samples;
     writer.write_all(format!("P3\n{} {}\n255\n", nx, ny).as_bytes()).unwrap();
 
     let hitable = random_scene(&mut rng);
@@ -149,7 +195,7 @@ fn main() {
         aperture,
         focus_dist
     };
-    let mut j = ny - 1;
+    let mut j = (ny - 1) as i32;
     while j >= 0 {
         for i in 0..nx {
             let mut col: Color3 = Color3 {r: 0.0, g: 0.0, b: 0.0};
@@ -157,7 +203,7 @@ fn main() {
                 let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
                 let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
                 let r: Ray = camera.get_ray(&mut rng, u, v);
-                col = &col + &color(&mut rng, &r, &hitable, 0);
+                col = &col + &color(&mut rng, &r, &hitable, opt.min_float, 0);
             }
             col = &col / ns as f32;
             col = Color3 {r: col.r.sqrt(), g: col.g.sqrt(), b: col.b.sqrt()};
