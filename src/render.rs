@@ -1,6 +1,7 @@
 use std::io;
 use std::io::Write;
 use rand::prelude::*;
+use rayon::prelude::*;
 
 use crate::color3::Color3;
 use crate::vec3::Vec3;
@@ -34,7 +35,7 @@ fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_flo
     }
 }
 
-pub fn render<W: Write, H: Hitable>(mut writer: io::BufWriter<W>, random_seed: u8, hitable: H, width: u32, height: u32, n_samples: u32, min_float: f32) {
+pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWriter<W>, random_seed: u8, hitable: H, width: u32, height: u32, n_samples: u32, min_float: f32) {
     let mut rng = util::rng_by_seed(random_seed);
 
     let nx: u32 = width;
@@ -79,15 +80,15 @@ pub fn render<W: Write, H: Hitable>(mut writer: io::BufWriter<W>, random_seed: u
             }
             v
         };
-        let mut col = seeds.iter()
-            .map(|seed| {
-                let mut rng = util::rng_by_seed(*seed);
+        let mut col = seeds.par_iter()
+            .map(|&seed| {
+                let mut rng = util::rng_by_seed(seed);
                 let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
                 let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
                 let r: Ray = camera.get_ray(&mut rng, u, v);
                 color(rng.borrow_mut(), &r, &hitable, min_float, 0)
             })
-            .fold(Color3 {r: 0.0, g: 0.0, b: 0.0}, |sum, c| {
+            .reduce(|| Color3 {r: 0.0, g: 0.0, b: 0.0}, |sum, c| {
                 &sum + &c
             });
         col = &col / ns as f32;

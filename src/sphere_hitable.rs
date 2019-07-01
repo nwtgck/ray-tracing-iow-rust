@@ -8,7 +8,7 @@ use core::borrow::Borrow;
 pub struct SphereHitable {
     pub center: Vec3,
     pub radius: f32,
-    pub material: Box<Material>
+    pub material: Box<Material + std::marker::Sync>
 }
 
 impl Hitable for SphereHitable {
