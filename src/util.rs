@@ -10,3 +10,8 @@ pub fn random_in_unit_sphere(rng: &mut rand::rngs::StdRng) -> Vec3 {
     } {}
     p
 }
+
+pub fn rng_by_seed(seed: u8) -> rand::rngs::StdRng {
+    let seed: [u8; 32] = [seed; 32];
+    rand::SeedableRng::from_seed(seed)
+}

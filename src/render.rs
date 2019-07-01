@@ -7,6 +7,8 @@ use crate::vec3::Vec3;
 use crate::ray::Ray;
 use crate::hitable::Hitable;
 use crate::camera::Camera;
+use crate::util;
+use core::borrow::BorrowMut;
 
 fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_float: f32, depth: i32) -> Color3 {
     if let Some(hit_record) = hitable.hit(r, min_float, std::f32::MAX) {
@@ -33,8 +35,7 @@ fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_flo
 }
 
 pub fn render<W: Write, H: Hitable>(mut writer: io::BufWriter<W>, random_seed: u8, hitable: H, width: u32, height: u32, n_samples: u32, min_float: f32) {
-    let seed: [u8; 32] = [random_seed; 32];
-    let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
+    let mut rng = util::rng_by_seed(random_seed);
 
     let nx: u32 = width;
     let ny: u32 = height;
@@ -54,20 +55,30 @@ pub fn render<W: Write, H: Hitable>(mut writer: io::BufWriter<W>, random_seed: u
         aperture,
         focus_dist
     };
-    let mut j = (ny - 1) as i32;
-    while j >= 0 {
-        for i in 0..nx {
-            let mut col: Color3 = Color3 {r: 0.0, g: 0.0, b: 0.0};
-            for _ in 0..ns {
-                let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
-                let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
-                let r: Ray = camera.get_ray(&mut rng, u, v);
-                col = &col + &color(&mut rng, &r, &hitable, min_float, 0);
+
+    // Position and seed pairs
+    let pos_and_seeds: Vec<((u32, u32), u8)> = {
+        // NOTE: This random seed generation should be evaluated strictly for reproducible random
+        let mut v: Vec<((u32, u32), u8)> = Vec::new();
+        for j in (0..ny).rev() {
+            for i in 0..nx {
+                let seed: u8 = rng.gen();
+                v.push(((i, j), seed));
             }
-            col = &col / ns as f32;
-            col = Color3 {r: col.r.sqrt(), g: col.g.sqrt(), b: col.b.sqrt()};
-            writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
         }
-        j -= 1;
+        v
+    };
+
+    for ((i, j), seed) in pos_and_seeds {
+        let mut col: Color3 = Color3 {r: 0.0, g: 0.0, b: 0.0};
+        for _ in 0..ns {
+            let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
+            let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
+            let r: Ray = camera.get_ray(&mut rng, u, v);
+            col = &col + &color(rng.borrow_mut(), &r, &hitable, min_float, 0);
+        }
+        col = &col / ns as f32;
+        col = Color3 {r: col.r.sqrt(), g: col.g.sqrt(), b: col.b.sqrt()};
+        writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
     }
 }
