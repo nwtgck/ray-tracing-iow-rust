@@ -62,12 +62,13 @@ fn main() {
         };
     let writer = io::BufWriter::new(write);
 
-    let seed: [u8; 32] = [opt.random_seed; 32];
-    let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
+    // Get random generator
+    let mut rng: rand::rngs::StdRng = util::rng_by_seed(opt.random_seed);
 
     // Generate hitable
     let hitable = random_hitables::iow_book_cover(&mut rng);
 
+    // Render by ray tracing
     render::render(
         writer,
         opt.random_seed,
