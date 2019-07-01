@@ -70,13 +70,26 @@ pub fn render<W: Write, H: Hitable>(mut writer: io::BufWriter<W>, random_seed: u
     };
 
     for ((i, j), seed) in pos_and_seeds {
-        let mut col: Color3 = Color3 {r: 0.0, g: 0.0, b: 0.0};
-        for _ in 0..ns {
-            let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
-            let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
-            let r: Ray = camera.get_ray(&mut rng, u, v);
-            col = &col + &color(rng.borrow_mut(), &r, &hitable, min_float, 0);
-        }
+        // Generate seeds
+        let seeds: Vec<u8> = {
+            let mut v: Vec<u8> = Vec::new();
+            let mut rng = util::rng_by_seed(seed);
+            for _ in 0..ns {
+                v.push(rng.gen());
+            }
+            v
+        };
+        let mut col = seeds.iter()
+            .map(|seed| {
+                let mut rng = util::rng_by_seed(*seed);
+                let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
+                let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
+                let r: Ray = camera.get_ray(&mut rng, u, v);
+                color(rng.borrow_mut(), &r, &hitable, min_float, 0)
+            })
+            .fold(Color3 {r: 0.0, g: 0.0, b: 0.0}, |sum, c| {
+                &sum + &c
+            });
         col = &col / ns as f32;
         col = Color3 {r: col.r.sqrt(), g: col.g.sqrt(), b: col.b.sqrt()};
         writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
