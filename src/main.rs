@@ -123,15 +123,47 @@ fn random_scene(rng: &mut rand::rngs::StdRng) -> impl Hitable {
     ListHitable{hitables}
 }
 
+use std::path::PathBuf;
+use structopt::StructOpt;
+
+/// Ray Tracing in One Weekend in Rust
+#[derive(StructOpt, Debug)]
+#[structopt(name = "ray-tracing-iow")]
+#[structopt(rename_all = "kebab-case")]
+struct Opt {
+    /// Image width
+    #[structopt(long, default_value = "600")]
+    width: u32,
+
+    /// Image height
+    #[structopt(long, default_value = "400")]
+    height: u32,
+
+    /// Number of samples
+    #[structopt(long, default_value = "10")]
+    n_samples: u32,
+
+    /// Random seed
+    #[structopt(long, default_value = "101")]
+    random_seed: u8,
+
+    /// Output file path
+    #[structopt(name = "FILE", parse(from_os_str))]
+    file: Option<PathBuf>,
+}
+
 fn main() {
+    // Parse options
+    let opt = Opt::from_args();
+
     let mut writer = io::BufWriter::new(io::stdout());
 
-    let seed: [u8; 32] = [13; 32];
+    let seed: [u8; 32] = [opt.random_seed; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
 
-    let nx: i32 = 1200;
-    let ny: i32 = 800;
-    let ns: i32 = 10;
+    let nx: u32 = opt.width;
+    let ny: u32 = opt.height;
+    let ns: u32 = opt.n_samples;
     writer.write_all(format!("P3\n{} {}\n255\n", nx, ny).as_bytes()).unwrap();
 
     let hitable = random_scene(&mut rng);
