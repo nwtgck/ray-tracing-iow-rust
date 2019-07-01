@@ -9,8 +9,10 @@ use crate::sphere_hitable::SphereHitable;
 use crate::material::{LambertMaterial, MetalMaterial};
 use crate::camera::Camera;
 use crate::scene::Scene;
+use crate::util;
 
 use crate::material::DielectricMaterial;
+use core::borrow::Borrow;
 
 // Book cover on the book of Ray Tracing in One Weekend
 pub fn iow_book_cover(rng: &mut rand::rngs::StdRng, width: u32, height: u32) -> Scene<impl Hitable> {
@@ -101,5 +103,187 @@ pub fn iow_book_cover(rng: &mut rand::rngs::StdRng, width: u32, height: u32) -> 
     Scene {
         camera,
         hitable: ListHitable{hitables}
+    }
+}
+
+pub struct FreeFallAnimation {
+    width: u32,
+    height: u32,
+    dt: f32,
+    min_t: f32,
+    max_t: f32,
+    random_seed: u8,
+
+    // passed time
+    t: f32,
+    look_from_theta: f32,
+    moving_hitable_generators: Vec<MovingHitableGenerator>
+}
+
+struct MovingHitableGenerator {
+    m: f32,
+    k: f32,
+    v: f32,
+    y: f32,
+    sphere_hitable: Box<dyn Fn(f32) -> SphereHitable>
+}
+
+impl FreeFallAnimation {
+    pub fn new(width: u32, height: u32, dt: f32, min_t: f32, max_t: f32, random_seed: u8) -> FreeFallAnimation {
+        let small_sphere_radius: f32 = 0.2;
+
+        let mut rng = util::rng_by_seed(random_seed);
+
+        let moving_hitable_generators = {
+            let mut v = Vec::new();
+
+            let mut a: f32 = -20.0;
+            while a <= 20.0 {
+                let mut b: f32 = -20.0;
+                while b <= 20.0 {
+                    if [Vec3{x: 4.0, y: 1.0, z: 0.0}, Vec3{x: -4.0, y: 1.0, z: 0.0}, Vec3{x: 0.0, y: 1.0, z: 0.0}].iter().all(|v|
+                      (&Vec3{x: a, y: 1.0, z: b} - &v).length() > 1.0 + small_sphere_radius
+                    ) {
+                        // TODO: Remove
+                        println!("{}, {}", a, b);
+                        // Find proper x and z
+                        let (x, z): (f32, f32) = {
+                            let mut x: f32;
+                            let mut z: f32;
+                            while {
+                                let r1: f32 = 0.9 * rng.gen::<f32>();
+                                let r2: f32 = 0.9 * rng.gen::<f32>();
+                                x = a + r1;
+                                z = b + r2;
+
+                                let mut sp = Vec::new();
+                                let mut y: f32 = small_sphere_radius;
+                                while y <= 4.0 {
+                                    sp.push(Vec3{x, y, z});
+                                    y += 0.1;
+                                }
+
+                                let v = sp.iter().all(|&c|
+                                    [Vec3{x: 4.0, y: 1.0, z: 0.0}, Vec3{x: -4.0, y: 1.0, z: 0.0}, Vec3{x: 0.0, y: 1.0, z: 0.0}].iter().all(|v|
+                                        (&c - &v).length() > 1.0 + small_sphere_radius
+                                    )
+                                );
+                                !v
+                            } {}
+                            (x, z)
+                        };
+
+
+                        let choose_mat: f32 = rng.gen();
+                        let center: Vec3 = Vec3 {x, y: small_sphere_radius, z};
+                        if choose_mat < 0.45 { // diffuse
+                            let albedo: Color3 = Color3 {
+                                r: rng.gen::<f32>() * rng.gen::<f32>(),
+                                g: rng.gen::<f32>() * rng.gen::<f32>(),
+                                b: rng.gen::<f32>() * rng.gen::<f32>()
+                            };
+                            v.push(MovingHitableGenerator {
+                                m: 100.0,
+                                k: 0.6,
+                                v: 10.0 + (4.0 * rng.gen::<f32>() - 2.0),
+                                y: small_sphere_radius,
+                                sphere_hitable: Box::new(move |y| SphereHitable {
+                                    center,
+                                    radius: small_sphere_radius,
+                                    material: Box::new(LambertMaterial{
+                                        albedo
+                                    })
+                                })
+                            });
+                        } else if choose_mat < 0.95 { // metal
+                            let albedo: Color3 = Color3 {
+                                r: 0.5 * (1.0 + rng.gen::<f32>()),
+                                g: 0.5 * (1.0 + rng.gen::<f32>()),
+                                b: 0.5 * (1.0 + rng.gen::<f32>())
+                            };
+                            let f = 0.5 * rng.gen::<f32>();
+                            v.push(MovingHitableGenerator {
+                                m: 200.0,
+                                k: 0.5,
+                                v: 10.0 + (4.0 * rng.gen::<f32>() - 2.0),
+                                y: small_sphere_radius,
+                                sphere_hitable: Box::new(move |y| SphereHitable {
+                                    center: Vec3 {x, y, z},
+                                    radius: small_sphere_radius,
+                                    material: Box::new(MetalMaterial {
+                                        albedo,
+                                        f,
+                                    })
+                                })
+                            });
+                        } else {
+                            v.push(MovingHitableGenerator {
+                                m: 300.0,
+                                k: 0.5,
+                                v: 10.0 + (4.0 * rng.gen::<f32>() - 2.0),
+                                y: small_sphere_radius,
+                                sphere_hitable: Box::new(move |y| SphereHitable {
+                                    center: Vec3 {x, y, z},
+                                    radius: small_sphere_radius,
+                                    material: Box::new(DielectricMaterial{ref_idx: 1.5})
+                                })
+                            });
+                        }
+
+                    }
+                    b += 1.2;
+                }
+                a += 1.2;
+            }
+            // TODO: impl
+
+//            v.push(MovingHitableGenerator {
+//                m: 100.0,
+//                k: 0.6,
+//                v: 10.0,
+//                y: small_sphere_radius,
+//                hitable_generator: |y: f32| {
+//                    SphereHitable {
+//                        center: Vec3{x: -4.0, y: 1.0, z: 0.0},
+//                        radius: 1.0,
+//                        material: Box::new(LambertMaterial{albedo: Color3{r: 0.4, g: 0.2, b: 0.1}})
+//                    }
+//                }
+//            });
+            v
+        };
+
+        FreeFallAnimation {
+            width,
+            height,
+            dt,
+            min_t,
+            max_t,
+            random_seed,
+            t: 0.0,
+            look_from_theta: 2.0 * std::f32::consts::PI,
+            moving_hitable_generators
+        }
+    }
+}
+
+impl Iterator for FreeFallAnimation {
+    type Item = Box<ListHitable<SphereHitable>>;
+    // TODO: impl
+    fn next(&mut self) -> Option<Self::Item> {
+        // Constants
+        let g: f32 = 9.80665;
+
+        let hitable = if self.t > self.max_t {
+            None
+        } else {
+            Some(Box::new(ListHitable{hitables: self.moving_hitable_generators.iter().map(|g|
+                (g.sphere_hitable)(g.y)
+            ).collect()}))
+        };
+
+        self.min_t += self.dt;
+
+        hitable
     }
 }

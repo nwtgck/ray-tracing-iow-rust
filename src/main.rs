@@ -53,6 +53,13 @@ fn main() {
     // Parse options
     let opt = Opt::from_args();
 
+    let a: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, 0.01, 0.01, 10.0, 3);
+
+    println!("HERE!");
+    // TODO: remove
+    std::process::exit(0);
+
+
     // Select output destination whether file or stdout
     // (from: https://users.rust-lang.org/t/how-to-create-bufreader---from-option-file-with-std-io-stdout-as-fallback-in-a-rust-way/12980/2?u=nwtgck)
     let write: Box<Write> =
