@@ -70,7 +70,8 @@ pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWrite
         v
     };
 
-    for ((i, j), seed) in pos_and_seeds {
+    // Generate colors in pixels by ray tracing
+    let colors: Vec<Color3> = pos_and_seeds.par_iter().cloned().map(|((i, j), seed) | {
         // Generate seeds
         let seeds: Vec<u8> = {
             let mut v: Vec<u8> = Vec::new();
@@ -93,6 +94,11 @@ pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWrite
             });
         col = &col / ns as f32;
         col = Color3 {r: col.r.sqrt(), g: col.g.sqrt(), b: col.b.sqrt()};
+        col
+    }).collect();
+
+    // Write the image pixels synchronously
+    for col in colors {
         writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
     }
 }
