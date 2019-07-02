@@ -173,7 +173,6 @@ impl FreeFallAnimation {
 
 
                         let choose_mat: f32 = rng.gen();
-                        let center: Vec3 = Vec3 {x, y: Self::small_sphere_radius, z};
                         if choose_mat < 0.45 { // diffuse
                             let albedo: Color3 = Color3 {
                                 r: rng.gen::<f32>() * rng.gen::<f32>(),
@@ -186,7 +185,7 @@ impl FreeFallAnimation {
                                 v: 10.0 + (4.0 * rng.gen::<f32>() - 2.0),
                                 y: Self::small_sphere_radius,
                                 sphere_hitable: Box::new(move |y| Box::new(SphereHitable {
-                                    center,
+                                    center: Vec3 {x, y, z},
                                     radius: Self::small_sphere_radius,
                                     material: Box::new(LambertMaterial{
                                         albedo

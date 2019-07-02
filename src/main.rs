@@ -55,40 +55,59 @@ fn main() {
     // Parse options
     let opt = Opt::from_args();
 
-    let a: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, 0.01, 0.01, 10.0, 3);
-    let first_scene = a.collect::<Vec<_>>().pop().unwrap();
+    // TODO: Hard code
+    let a: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, 0.005, 0.0, 6.0, 3);
+//    let first_scene = a.collect::<Vec<_>>().pop().unwrap();
+
+    for (idx, scene) in a.enumerate() {
+        // TODO: Hard code: path
+        let file_path = format!("anime/anime{:08}.ppm", idx + 1);
+        println!("{}", file_path);
+        let writer = io::BufWriter::new(fs::File::create(file_path).unwrap());
+        // Render by ray tracing
+        render::render(
+            writer,
+            3, // TODO: Hard code: seed
+            scene,
+            opt.width,
+            opt.height,
+            opt.n_samples,
+            opt.min_float
+        );
+    }
+
 
 
     println!("HERE!");
     // TODO: remove
-//    std::process::exit(0);
+    std::process::exit(0);
 
 
-    // Select output destination whether file or stdout
-    // (from: https://users.rust-lang.org/t/how-to-create-bufreader---from-option-file-with-std-io-stdout-as-fallback-in-a-rust-way/12980/2?u=nwtgck)
-    let write: Box<Write> =
-        if let Some(file_path) = opt.file {
-            Box::new(fs::File::create(file_path).unwrap())
-        } else {
-            Box::new(io::stdout())
-        };
-    let writer = io::BufWriter::new(write);
-
-    // Get random generator
-    let mut rng: rand::rngs::StdRng = util::rng_by_seed(opt.random_seed);
-
-    // Generate scene
-    let scene = random_scenes::iow_book_cover(&mut rng, opt.width, opt.height);
-
-    // Render by ray tracing
-    render::render(
-        writer,
-        opt.random_seed,
-        first_scene,
-//        scene,
-        opt.width,
-        opt.height,
-        opt.n_samples,
-        opt.min_float
-    );
+//    // Select output destination whether file or stdout
+//    // (from: https://users.rust-lang.org/t/how-to-create-bufreader---from-option-file-with-std-io-stdout-as-fallback-in-a-rust-way/12980/2?u=nwtgck)
+//    let write: Box<Write> =
+//        if let Some(file_path) = opt.file {
+//            Box::new(fs::File::create(file_path).unwrap())
+//        } else {
+//            Box::new(io::stdout())
+//        };
+//    let writer = io::BufWriter::new(write);
+//
+//    // Get random generator
+//    let mut rng: rand::rngs::StdRng = util::rng_by_seed(opt.random_seed);
+//
+//    // Generate scene
+//    let scene = random_scenes::iow_book_cover(&mut rng, opt.width, opt.height);
+//
+//    // Render by ray tracing
+//    render::render(
+//        writer,
+//        opt.random_seed,
+//        first_scene,
+////        scene,
+//        opt.width,
+//        opt.height,
+//        opt.n_samples,
+//        opt.min_float
+//    );
 }
