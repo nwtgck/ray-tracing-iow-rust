@@ -100,7 +100,7 @@ fn main() {
         render::render(
             writer,
             opt.random_seed,
-            scene,
+            &scene,
             opt.width,
             opt.height,
             opt.n_samples,

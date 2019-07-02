@@ -12,6 +12,7 @@ use crate::hitable::Hitable;
 use crate::util;
 use core::borrow::{BorrowMut, Borrow};
 use crate::scene::Scene;
+use crate::camera::Camera;
 
 fn color(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &Hitable, min_float: f32, depth: i32) -> Color3 {
     if let Some(hit_record) = hitable.hit(r, min_float, std::f32::MAX) {
@@ -37,7 +38,7 @@ fn color(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &Hitable, min_float: f3
     }
 }
 
-pub fn render<W: Write>(mut writer: io::BufWriter<W>, random_seed: u8, scene: Scene, width: u32, height: u32, n_samples: u32, min_float: f32) {
+pub fn render<W: Write>(mut writer: io::BufWriter<W>, random_seed: u8, scene: &Scene, width: u32, height: u32, n_samples: u32, min_float: f32) {
     let mut rng = util::rng_by_seed(random_seed);
 
     let nx: u32 = width;
@@ -45,8 +46,7 @@ pub fn render<W: Write>(mut writer: io::BufWriter<W>, random_seed: u8, scene: Sc
     let ns: u32 = n_samples;
     writer.write_all(format!("P3\n{} {}\n255\n", nx, ny).as_bytes()).unwrap();
 
-    let camera = scene.camera;
-//    let hitable = scene.hitable;
+    let camera: &Camera = &scene.camera;
     let h: &(Hitable + Sync) = scene.hitable.borrow();
 
     // Position and seed pairs
@@ -96,9 +96,11 @@ pub fn render<W: Write>(mut writer: io::BufWriter<W>, random_seed: u8, scene: Sc
 }
 
 pub fn render_animation(anime_out_dir_path: &path::Path, random_seed: u8, scene_iterator: impl Iterator<Item=Scene>, width: u32, height: u32, n_samples: u32, min_float: f32) {
+    // Create a animation directory
     std::fs::create_dir_all(anime_out_dir_path).unwrap();
-    for (idx, scene) in scene_iterator.enumerate() {
-        let file_path = anime_out_dir_path.join(format!("anime{:08}.ppm", idx + 1));
+    // NOTE: collect is necessary for using .par_iter in Rayon. par_bridge can be useful but it requires Send
+    scene_iterator.enumerate().collect::<Vec<_>>().into_par_iter().for_each(|(idx, scene)| {
+        let file_path = anime_out_dir_path.join(format!("anime{:08}.ppm", *idx + 1));
         let writer = io::BufWriter::new(fs::File::create(&file_path).unwrap());
         // Render by ray tracing
         render(
@@ -111,5 +113,5 @@ pub fn render_animation(anime_out_dir_path: &path::Path, random_seed: u8, scene_
             min_float
         );
         println!("{:?} rendered", file_path);
-    }
+    });
 }
