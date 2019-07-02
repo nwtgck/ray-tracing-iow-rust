@@ -1,7 +1,7 @@
 use crate::camera::Camera;
 use crate::hitable::Hitable;
 
-pub struct Scene<H: Hitable> {
+pub struct Scene {
     pub camera: Camera,
-    pub hitable: H
+    pub hitable: Box<dyn Hitable + Sync>
 }

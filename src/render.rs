@@ -1,4 +1,6 @@
 use std::io;
+use std::fs;
+use std::path;
 use std::io::Write;
 use rand::prelude::*;
 use rayon::prelude::*;
@@ -8,10 +10,11 @@ use crate::vec3::Vec3;
 use crate::ray::Ray;
 use crate::hitable::Hitable;
 use crate::util;
-use core::borrow::BorrowMut;
+use core::borrow::{BorrowMut, Borrow};
 use crate::scene::Scene;
+use crate::camera::Camera;
 
-fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_float: f32, depth: i32) -> Color3 {
+fn color(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &Hitable, min_float: f32, depth: i32) -> Color3 {
     if let Some(hit_record) = hitable.hit(r, min_float, std::f32::MAX) {
         if depth < 50 {
             if let Some(scatter_record) = hit_record.material.scatter(rng, r, &hit_record) {
@@ -35,7 +38,7 @@ fn color<H: Hitable>(rng: &mut rand::rngs::StdRng, r: &Ray, hitable: &H, min_flo
     }
 }
 
-pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWriter<W>, random_seed: u8, scene: Scene<H>, width: u32, height: u32, n_samples: u32, min_float: f32) {
+pub fn render<W: Write>(mut writer: io::BufWriter<W>, random_seed: u8, scene: &Scene, width: u32, height: u32, n_samples: u32, min_float: f32) {
     let mut rng = util::rng_by_seed(random_seed);
 
     let nx: u32 = width;
@@ -43,8 +46,8 @@ pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWrite
     let ns: u32 = n_samples;
     writer.write_all(format!("P3\n{} {}\n255\n", nx, ny).as_bytes()).unwrap();
 
-    let camera = scene.camera;
-    let hitable = scene.hitable;
+    let camera: &Camera = &scene.camera;
+    let h: &(Hitable + Sync) = scene.hitable.borrow();
 
     // Position and seed pairs
     let pos_and_seeds: Vec<((u32, u32), u8)> = {
@@ -76,7 +79,7 @@ pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWrite
                 let u: f32 = (i as f32 + rng.gen::<f32>()) / nx as f32;
                 let v: f32 = (j as f32 + rng.gen::<f32>()) / ny as f32;
                 let r: Ray = camera.get_ray(&mut rng, u, v);
-                color(rng.borrow_mut(), &r, &hitable, min_float, 0)
+                color(rng.borrow_mut(), &r, h, min_float, 0)
             })
             .reduce(|| Color3 {r: 0.0, g: 0.0, b: 0.0}, |sum, c| {
                 &sum + &c
@@ -90,4 +93,25 @@ pub fn render<W: Write, H: Hitable + std::marker::Sync>(mut writer: io::BufWrite
     for col in colors {
         writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
     }
+}
+
+pub fn render_animation(anime_out_dir_path: &path::Path, random_seed: u8, scene_iterator: impl Iterator<Item=Scene>, width: u32, height: u32, n_samples: u32, min_float: f32) {
+    // Create a animation directory
+    std::fs::create_dir_all(anime_out_dir_path).unwrap();
+    // NOTE: collect is necessary for using .par_iter in Rayon. par_bridge can be useful but it requires Send
+    scene_iterator.enumerate().collect::<Vec<_>>().into_par_iter().for_each(|(idx, scene)| {
+        let file_path = anime_out_dir_path.join(format!("anime{:08}.ppm", *idx + 1));
+        let writer = io::BufWriter::new(fs::File::create(&file_path).unwrap());
+        // Render by ray tracing
+        render(
+            writer,
+            random_seed,
+            scene,
+            width,
+            height,
+            n_samples,
+            min_float
+        );
+        println!("{:?} rendered", file_path);
+    });
 }
