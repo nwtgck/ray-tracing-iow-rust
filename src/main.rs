@@ -4,6 +4,8 @@ use std::io::Write;
 use rand;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use crate::scene::Scene;
+use core::borrow::Borrow;
 
 mod color3;
 mod vec3;
@@ -54,10 +56,12 @@ fn main() {
     let opt = Opt::from_args();
 
     let a: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, 0.01, 0.01, 10.0, 3);
+    let first_scene = a.collect::<Vec<_>>().pop().unwrap();
+
 
     println!("HERE!");
     // TODO: remove
-    std::process::exit(0);
+//    std::process::exit(0);
 
 
     // Select output destination whether file or stdout
@@ -80,7 +84,8 @@ fn main() {
     render::render(
         writer,
         opt.random_seed,
-        scene,
+        first_scene,
+//        scene,
         opt.width,
         opt.height,
         opt.n_samples,

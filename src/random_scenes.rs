@@ -15,7 +15,7 @@ use crate::material::DielectricMaterial;
 use core::borrow::Borrow;
 
 // Book cover on the book of Ray Tracing in One Weekend
-pub fn iow_book_cover(rng: &mut rand::rngs::StdRng, width: u32, height: u32) -> Scene<impl Hitable> {
+pub fn iow_book_cover(rng: &mut rand::rngs::StdRng, width: u32, height: u32) -> Scene {
     let mut hitables: Vec<SphereHitable> = Vec::new();
 
     hitables.push(SphereHitable {
@@ -102,7 +102,7 @@ pub fn iow_book_cover(rng: &mut rand::rngs::StdRng, width: u32, height: u32) -> 
 
     Scene {
         camera,
-        hitable: ListHitable{hitables}
+        hitable: Box::new(ListHitable{hitables})
     }
 }
 
@@ -268,7 +268,7 @@ impl FreeFallAnimation {
 }
 
 impl Iterator for FreeFallAnimation {
-    type Item = Box<ListHitable<SphereHitable>>;
+    type Item = Scene;
     // TODO: impl
     fn next(&mut self) -> Option<Self::Item> {
         // Constants
@@ -277,12 +277,31 @@ impl Iterator for FreeFallAnimation {
         let hitable = if self.t > self.max_t {
             None
         } else {
-            Some(Box::new(ListHitable{hitables: self.moving_hitable_generators.iter().map(|g|
+            // TODO: Hard code camera
+            let lookfrom: Vec3 = Vec3 {x: 13.0, y: 2.0, z: 3.0};
+            let lookat  : Vec3 = Vec3 {x: 0.0, y: 0.0, z: 0.0};
+            let focus_dist: f32 = 10.0;
+            let aperture  : f32  = 0.1;
+            let camera: Camera = Camera {
+                lookfrom,
+                lookat,
+                vup: Vec3 {x: 0.0, y: 1.0, z: 0.0},
+                vfov: 20.0,
+                aspect: self.width as f32 / self.height as f32,
+                aperture,
+                focus_dist
+            };
+
+            let hitable = Box::new(ListHitable{hitables: self.moving_hitable_generators.iter().map(|g|
                 (g.sphere_hitable)(g.y)
-            ).collect()}))
+            ).collect()});
+            Some(Scene {
+                camera,
+                hitable
+            })
         };
 
-        self.min_t += self.dt;
+        self.t += self.dt;
 
         hitable
     }
