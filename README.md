@@ -1,4 +1,6 @@
 # ray-tracing-iow
+[![CircleCI](https://circleci.com/gh/nwtgck/ray-tracing-iow-rust.svg?style=shield)](https://circleci.com/gh/nwtgck/ray-tracing-iow-rust)
+
 Ray Tracing in One Weekend written in Rust
 
 ![Ray Tracing Animation](doc_assets/ray-tracing-animation.gif)
