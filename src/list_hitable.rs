@@ -2,11 +2,11 @@ use crate::ray::Ray;
 use crate::hitable::Hitable;
 use crate::hitable::HitRecord;
 
-pub struct ListHitable<H: Hitable> {
-    pub hitables: std::vec::Vec<H>
+pub struct ListHitable {
+    pub hitables: std::vec::Vec<Box<dyn Hitable + Sync>>
 }
 
-impl<H: Hitable> Hitable for ListHitable<H> {
+impl Hitable for ListHitable {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let mut closest_so_far: f32 = t_max;
         let mut hit_record_opt: Option<HitRecord> = None;
