@@ -296,7 +296,7 @@ impl Iterator for FreeFallAnimation {
                     y: 2.0,
                     z: r * self.look_from_theta.sin()
                 };
-                let lookat  : Vec3 = Vec3 {x: 0.0, y: 0.0, z: 0.0};
+                let lookat  : Vec3 = Vec3 {x: 4.0, y: 1.0, z: 0.0};
                 let focus_dist: f32 = 10.0;
                 let aperture  : f32  = 0.1;
                 Camera {
