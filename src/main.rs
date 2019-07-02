@@ -59,7 +59,7 @@ struct Opt {
     anime_min_t: f32,
 
     /// Animation max time
-    #[structopt(long, default_value = "5.2")]
+    #[structopt(long, default_value = "6.0")]
     anime_max_t: f32,
 
     /// Output file path
@@ -76,9 +76,9 @@ fn main() {
         // Get animation output directory path
         let anime_out_dir_path = std::path::Path::new(&anime_out_dir_path_str);
         // Get scene iterator
-        let a: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, 0.03, 0.0, 5.2, 3);
+        let scene_iter: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, opt.anime_dt, opt.anime_min_t, opt.anime_max_t, opt.random_seed);
         // Render animation frame by frame
-        render::render_animation(anime_out_dir_path, opt.random_seed, a, opt.width, opt.height, opt.n_samples, opt.min_float);
+        render::render_animation(anime_out_dir_path, opt.random_seed, scene_iter, opt.width, opt.height, opt.n_samples, opt.min_float);
     } else {
         // Select output destination whether file or stdout
         // (from: https://users.rust-lang.org/t/how-to-create-bufreader---from-option-file-with-std-io-stdout-as-fallback-in-a-rust-way/12980/2?u=nwtgck)

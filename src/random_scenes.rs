@@ -140,10 +140,8 @@ impl FreeFallAnimation {
                 let mut b: f32 = -20.0;
                 while b <= 20.0 {
                     if [Vec3{x: 4.0, y: 1.0, z: 0.0}, Vec3{x: -4.0, y: 1.0, z: 0.0}, Vec3{x: 0.0, y: 1.0, z: 0.0}].iter().all(|v|
-                      (&Vec3{x: a, y: 1.0, z: b} - &v).length() > 1.0 + Self::small_sphere_radius
+                      (&Vec3{x: a, y: 1.0, z: b} - &v).length() > 1.0 + Self::SMALL_SPHERE_RADIUS
                     ) {
-                        // TODO: Remove
-                        println!("{}, {}", a, b);
                         // Find proper x and z
                         let (x, z): (f32, f32) = {
                             let mut x: f32;
@@ -155,7 +153,7 @@ impl FreeFallAnimation {
                                 z = b + r2;
 
                                 let mut sp = Vec::new();
-                                let mut y: f32 = Self::small_sphere_radius;
+                                let mut y: f32 = Self::SMALL_SPHERE_RADIUS;
                                 while y <= 4.0 {
                                     sp.push(Vec3{x, y, z});
                                     y += 0.1;
@@ -163,7 +161,7 @@ impl FreeFallAnimation {
 
                                 let v = sp.iter().all(|&c|
                                     [Vec3{x: 4.0, y: 1.0, z: 0.0}, Vec3{x: -4.0, y: 1.0, z: 0.0}, Vec3{x: 0.0, y: 1.0, z: 0.0}].iter().all(|v|
-                                        (&c - &v).length() > 1.0 + Self::small_sphere_radius
+                                        (&c - &v).length() > 1.0 + Self::SMALL_SPHERE_RADIUS
                                     )
                                 );
                                 !v
@@ -183,10 +181,10 @@ impl FreeFallAnimation {
                                 m: 100.0,
                                 k: 0.6,
                                 v: 10.0 + (4.0 * rng.gen::<f32>() - 2.0),
-                                y: Self::small_sphere_radius,
+                                y: Self::SMALL_SPHERE_RADIUS,
                                 sphere_hitable: Box::new(move |y| Box::new(SphereHitable {
                                     center: Vec3 {x, y, z},
-                                    radius: Self::small_sphere_radius,
+                                    radius: Self::SMALL_SPHERE_RADIUS,
                                     material: Box::new(LambertMaterial{
                                         albedo
                                     })
@@ -203,10 +201,10 @@ impl FreeFallAnimation {
                                 m: 200.0,
                                 k: 0.5,
                                 v: 10.0 + (4.0 * rng.gen::<f32>() - 2.0),
-                                y: Self::small_sphere_radius,
+                                y: Self::SMALL_SPHERE_RADIUS,
                                 sphere_hitable: Box::new(move |y| Box::new(SphereHitable {
                                     center: Vec3 {x, y, z},
-                                    radius: Self::small_sphere_radius,
+                                    radius: Self::SMALL_SPHERE_RADIUS,
                                     material: Box::new(MetalMaterial {
                                         albedo,
                                         f,
@@ -218,10 +216,10 @@ impl FreeFallAnimation {
                                 m: 300.0,
                                 k: 0.5,
                                 v: 10.0 + (4.0 * rng.gen::<f32>() - 2.0),
-                                y: Self::small_sphere_radius,
+                                y: Self::SMALL_SPHERE_RADIUS,
                                 sphere_hitable: Box::new(move |y| Box::new(SphereHitable {
                                     center: Vec3 {x, y, z},
-                                    radius: Self::small_sphere_radius,
+                                    radius: Self::SMALL_SPHERE_RADIUS,
                                     material: Box::new(DielectricMaterial{ref_idx: 1.5})
                                 }))
                             });
@@ -250,8 +248,8 @@ impl FreeFallAnimation {
 }
 
 impl FreeFallAnimation {
-    const g: f32 = 9.80665;
-    const small_sphere_radius: f32 = 0.2;
+    const G: f32 = 9.80665;
+    const SMALL_SPHERE_RADIUS: f32 = 0.2;
 
     fn update(&mut self) {
         self.camera_update();
@@ -259,14 +257,14 @@ impl FreeFallAnimation {
     }
 
     fn camera_update(&mut self) {
-        self.look_from_theta += -(2.0 * std::f32::consts::PI / 1200.0)
+        self.look_from_theta += -(2.0 * std::f32::consts::PI / 200.0)
     }
 
     fn physical_update(&mut self) {
         self.t += self.dt;
         for hitable_generator in &mut self.moving_hitable_generators {
-            let f = - hitable_generator.m * Self::g;
-            if hitable_generator.v < 0.0 && hitable_generator.y < Self::small_sphere_radius {
+            let f = - hitable_generator.m * Self::G;
+            if hitable_generator.v < 0.0 && hitable_generator.y < Self::SMALL_SPHERE_RADIUS {
                 hitable_generator.v = -hitable_generator.k * hitable_generator.v;
             } else {
                 let a = f / hitable_generator.m;
@@ -292,8 +290,12 @@ impl Iterator for FreeFallAnimation {
             None
         } else {
             let camera: Camera = {
-                // TODO: Hard code
-                let lookfrom: Vec3 = Vec3 {x: 13.0, y: 2.0, z: 3.0};
+                let r: f32 = 200.0f32.sqrt();
+                let lookfrom: Vec3 = Vec3 {
+                    x: r * self.look_from_theta.cos(),
+                    y: 2.0,
+                    z: r * self.look_from_theta.sin()
+                };
                 let lookat  : Vec3 = Vec3 {x: 0.0, y: 0.0, z: 0.0};
                 let focus_dist: f32 = 10.0;
                 let aperture  : f32  = 0.1;
@@ -340,7 +342,6 @@ impl Iterator for FreeFallAnimation {
             })
         };
 
-        println!("t: {}", self.t);
         self.update();
 
         hitable
