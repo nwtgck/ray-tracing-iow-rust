@@ -279,11 +279,11 @@ impl FreeFallAnimation {
 
 impl Iterator for FreeFallAnimation {
     type Item = Scene;
-    // TODO: impl
+
     fn next(&mut self) -> Option<Self::Item> {
 
         // Skip
-        if (self.t < self.min_t) {
+        if self.t < self.min_t {
             self.update();
             return self.next();
         }
@@ -340,6 +340,7 @@ impl Iterator for FreeFallAnimation {
             })
         };
 
+        println!("t: {}", self.t);
         self.update();
 
         hitable

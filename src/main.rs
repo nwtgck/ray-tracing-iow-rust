@@ -46,6 +46,22 @@ struct Opt {
     #[structopt(long, default_value = "101")]
     random_seed: u8,
 
+    /// Animation output directory
+    #[structopt(long)]
+    anime_out_dir_path: Option<String>,
+
+    /// Animation dt
+    #[structopt(long, default_value = "0.03")]
+    anime_dt: f32,
+
+    /// Animation minimum time
+    #[structopt(long, default_value = "0.0")]
+    anime_min_t: f32,
+
+    /// Animation max time
+    #[structopt(long, default_value = "5.2")]
+    anime_max_t: f32,
+
     /// Output file path
     #[structopt(name = "FILE", parse(from_os_str))]
     file: Option<PathBuf>,
@@ -55,19 +71,35 @@ fn main() {
     // Parse options
     let opt = Opt::from_args();
 
-    // TODO: Hard code
-    let a: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, 0.005, 0.0, 6.0, 3);
-//    let first_scene = a.collect::<Vec<_>>().pop().unwrap();
+    // If render animation
+    if let Some(anime_out_dir_path_str) = opt.anime_out_dir_path {
+        // Get animation output directory path
+        let anime_out_dir_path = std::path::Path::new(&anime_out_dir_path_str);
+        // Get scene iterator
+        let a: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, 0.03, 0.0, 5.2, 3);
+        // Render animation frame by frame
+        render::render_animation(anime_out_dir_path, opt.random_seed, a, opt.width, opt.height, opt.n_samples, opt.min_float);
+    } else {
+        // Select output destination whether file or stdout
+        // (from: https://users.rust-lang.org/t/how-to-create-bufreader---from-option-file-with-std-io-stdout-as-fallback-in-a-rust-way/12980/2?u=nwtgck)
+        let write: Box<Write> =
+            if let Some(file_path) = opt.file {
+                Box::new(fs::File::create(file_path).unwrap())
+            } else {
+                Box::new(io::stdout())
+            };
+        let writer = io::BufWriter::new(write);
 
-    for (idx, scene) in a.enumerate() {
-        // TODO: Hard code: path
-        let file_path = format!("anime/anime{:08}.ppm", idx + 1);
-        println!("{}", file_path);
-        let writer = io::BufWriter::new(fs::File::create(file_path).unwrap());
+        // Get random generator
+        let mut rng: rand::rngs::StdRng = util::rng_by_seed(opt.random_seed);
+
+        // Generate scene
+        let scene = random_scenes::iow_book_cover(&mut rng, opt.width, opt.height);
+
         // Render by ray tracing
         render::render(
             writer,
-            3, // TODO: Hard code: seed
+            opt.random_seed,
             scene,
             opt.width,
             opt.height,
@@ -75,39 +107,4 @@ fn main() {
             opt.min_float
         );
     }
-
-
-
-    println!("HERE!");
-    // TODO: remove
-    std::process::exit(0);
-
-
-//    // Select output destination whether file or stdout
-//    // (from: https://users.rust-lang.org/t/how-to-create-bufreader---from-option-file-with-std-io-stdout-as-fallback-in-a-rust-way/12980/2?u=nwtgck)
-//    let write: Box<Write> =
-//        if let Some(file_path) = opt.file {
-//            Box::new(fs::File::create(file_path).unwrap())
-//        } else {
-//            Box::new(io::stdout())
-//        };
-//    let writer = io::BufWriter::new(write);
-//
-//    // Get random generator
-//    let mut rng: rand::rngs::StdRng = util::rng_by_seed(opt.random_seed);
-//
-//    // Generate scene
-//    let scene = random_scenes::iow_book_cover(&mut rng, opt.width, opt.height);
-//
-//    // Render by ray tracing
-//    render::render(
-//        writer,
-//        opt.random_seed,
-//        first_scene,
-////        scene,
-//        opt.width,
-//        opt.height,
-//        opt.n_samples,
-//        opt.min_float
-//    );
 }

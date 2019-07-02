@@ -1,4 +1,6 @@
 use std::io;
+use std::fs;
+use std::path;
 use std::io::Write;
 use rand::prelude::*;
 use rayon::prelude::*;
@@ -90,5 +92,24 @@ pub fn render<W: Write>(mut writer: io::BufWriter<W>, random_seed: u8, scene: Sc
     // Write the image pixels synchronously
     for col in colors {
         writer.write_all(format!("{} {} {}\n", col.ir(), col.ig(), col.ib()).as_bytes()).unwrap();
+    }
+}
+
+pub fn render_animation(anime_out_dir_path: &path::Path, random_seed: u8, scene_iterator: impl Iterator<Item=Scene>, width: u32, height: u32, n_samples: u32, min_float: f32) {
+    std::fs::create_dir_all(anime_out_dir_path).unwrap();
+    for (idx, scene) in scene_iterator.enumerate() {
+        let file_path = anime_out_dir_path.join(format!("anime{:08}.ppm", idx + 1));
+        let writer = io::BufWriter::new(fs::File::create(&file_path).unwrap());
+        // Render by ray tracing
+        render(
+            writer,
+            random_seed,
+            scene,
+            width,
+            height,
+            n_samples,
+            min_float
+        );
+        println!("{:?} rendered", file_path);
     }
 }
