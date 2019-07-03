@@ -12,7 +12,6 @@ use crate::scene::Scene;
 use crate::util;
 
 use crate::material::DielectricMaterial;
-use core::borrow::Borrow;
 
 // Book cover on the book of Ray Tracing in One Weekend
 pub fn iow_book_cover(rng: &mut rand::rngs::StdRng, width: u32, height: u32) -> Scene {
@@ -112,7 +111,6 @@ pub struct FreeFallAnimation {
     dt: f32,
     min_t: f32,
     max_t: f32,
-    random_seed: u8,
 
     // passed time
     t: f32,
@@ -239,7 +237,6 @@ impl FreeFallAnimation {
             dt,
             min_t,
             max_t,
-            random_seed,
             t: 0.0,
             look_from_theta: 2.0 * std::f32::consts::PI,
             moving_hitable_generators

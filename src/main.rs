@@ -4,8 +4,6 @@ use std::io::Write;
 use rand;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use crate::scene::Scene;
-use core::borrow::Borrow;
 
 mod color3;
 mod vec3;
