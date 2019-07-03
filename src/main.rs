@@ -51,7 +51,7 @@ struct Opt {
     anime_out_dir_path: Option<String>,
 
     /// Animation dt
-    #[structopt(long, default_value = "0.03")]
+    #[structopt(long, default_value = "0.005")]
     anime_dt: f32,
 
     /// Animation minimum time
@@ -61,6 +61,10 @@ struct Opt {
     /// Animation max time
     #[structopt(long, default_value = "6.0")]
     anime_max_t: f32,
+
+    /// Animation max time
+    #[structopt(long, default_value = "6")]
+    anime_skip_step: usize,
 
     /// Output file path
     #[structopt(name = "FILE", parse(from_os_str))]
@@ -77,6 +81,8 @@ fn main() {
         let anime_out_dir_path = std::path::Path::new(&anime_out_dir_path_str);
         // Get scene iterator
         let scene_iter: random_scenes::FreeFallAnimation = random_scenes::FreeFallAnimation::new(opt.width, opt.height, opt.anime_dt, opt.anime_min_t, opt.anime_max_t, opt.random_seed);
+        // Skip by step
+        let scene_iter= util::skip_by_step(scene_iter, opt.anime_skip_step);
         // Render animation frame by frame
         render::render_animation(anime_out_dir_path, opt.random_seed, scene_iter, opt.width, opt.height, opt.n_samples, opt.min_float);
     } else {

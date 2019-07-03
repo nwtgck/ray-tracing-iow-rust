@@ -15,3 +15,31 @@ pub fn rng_by_seed(seed: u8) -> rand::rngs::StdRng {
     let seed: [u8; 32] = [seed; 32];
     rand::SeedableRng::from_seed(seed)
 }
+
+pub struct SkipStepIterator<I> {
+    iter: I,
+    skip_step: usize,
+    idx: usize
+}
+
+impl<I: Iterator> Iterator for SkipStepIterator<I> {
+    type Item = <I as Iterator>::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.idx % (self.skip_step + 1) != 0 {
+            self.iter.next();
+            self.idx += 1;
+        }
+        let next = self.iter.next();
+        self.idx += 1;
+        next
+    }
+}
+
+pub fn skip_by_step<I: Iterator>(iter: I, skip_step: usize) -> SkipStepIterator<I> {
+    SkipStepIterator {
+        iter,
+        skip_step,
+        idx: 0
+    }
+}

@@ -257,7 +257,7 @@ impl FreeFallAnimation {
     }
 
     fn camera_update(&mut self) {
-        self.look_from_theta += -(2.0 * std::f32::consts::PI / 200.0)
+        self.look_from_theta += -(2.0 * std::f32::consts::PI / 1200.0)
     }
 
     fn physical_update(&mut self) {

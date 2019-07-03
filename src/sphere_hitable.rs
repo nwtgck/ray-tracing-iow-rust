@@ -12,6 +12,7 @@ pub struct SphereHitable {
 }
 
 impl Hitable for SphereHitable {
+    #[inline(always)]
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let oc: Vec3 = &r.origin - &self.center;
         let a : f32  = r.direction.dot(&r.direction);
