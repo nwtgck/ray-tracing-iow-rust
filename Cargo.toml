@@ -5,6 +5,6 @@ authors = ["Ryo Ota <nwtgck@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rand = "0.7"
+rand = "0.8"
 structopt = "0.3"
 rayon = "1.5"
