@@ -1,7 +1,7 @@
 [package]
 name = "ray-tracing-iow"
 version = "0.1.0"
-authors = ["Ryo Ota <nwtgck@gmail.com>"]
+authors = ["Ryo Ota <nwtgck@nwtgck.org>"]
 edition = "2018"
 
 [dependencies]
